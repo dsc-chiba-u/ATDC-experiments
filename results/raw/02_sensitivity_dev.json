@@ -1,0 +1,39 @@
+{
+ "args": {
+  "n": 20000,
+  "seeds": 5,
+  "seed0": 100,
+  "tag": "dev",
+  "datasets": [
+   "gauss3",
+   "gauss3_close",
+   "gauss3_border",
+   "hetero",
+   "moons",
+   "circles",
+   "hier",
+   "unimodal",
+   "uniform",
+   "banana",
+   "gauss3_noise3"
+  ]
+ },
+ "base": {
+  "K": 100,
+  "q": 0.1,
+  "tau": 0.5,
+  "z": 0.0,
+  "z_saddle": 0.0,
+  "t_top": 5,
+  "midpoint": false
+ },
+ "env": {
+  "python": "3.11.18",
+  "numpy": "2.4.6",
+  "scipy": "1.17.1",
+  "sklearn": "1.9.1",
+  "machine": "Linux-6.8.0-136-generic-x86_64-with-glibc2.35",
+  "threads": "1"
+ },
+ "note": "Run as two processes over disjoint data sets (first: gauss3 ... circles, second: hier ... gauss3_noise3) and concatenated."
+}

@@ -6,6 +6,9 @@
   "q": 0.1,
   "tau": 0.5,
   "z": 0.0,
+  "z_saddle": 2.0,
+  "t_top": 5,
+  "seed0": 0,
   "kg": 10,
   "tag": "main",
   "datasets": [

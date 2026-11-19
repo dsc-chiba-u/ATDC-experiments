@@ -1,0 +1,32 @@
+{
+ "args": {
+  "n": 5000,
+  "seeds": 3,
+  "seed0": 0,
+  "K": 100,
+  "q": 0.1,
+  "tau": 0.5,
+  "z": 0.0,
+  "z_saddle": 2.0,
+  "t_top": 5,
+  "automato": true,
+  "no_dadapy": false,
+  "tag": "automato_n5k",
+  "datasets": [
+   "gauss3_close",
+   "hetero",
+   "moons",
+   "circles",
+   "hier",
+   "unimodal"
+  ]
+ },
+ "env": {
+  "python": "3.11.18",
+  "numpy": "2.4.6",
+  "scipy": "1.17.1",
+  "sklearn": "1.9.1",
+  "machine": "Linux-6.8.0-136-generic-x86_64-with-glibc2.35",
+  "threads": "1"
+ }
+}

@@ -72,5 +72,9 @@ def evaluate(est, truth, tau, margin=0.05) -> dict:
     if est.labels is not None:
         out["ari"] = float(adjusted_rand_score(L, est.labels))
         out["nmi"] = float(normalized_mutual_info_score(L, est.labels))
-        out["frac_noise"] = float(np.mean(np.asarray(est.labels) < 0))
+        keep = np.asarray(est.labels) >= 0
+        out["frac_noise"] = float(np.mean(~keep))
+        # methods that leave points unlabelled: agreement on the labelled ones
+        out["ari_nonnoise"] = float(adjusted_rand_score(L[keep], np.asarray(est.labels)[keep])) \
+            if keep.sum() > 1 else np.nan
     return out

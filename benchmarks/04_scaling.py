@@ -62,7 +62,7 @@ def worker(method, dataset, n, seed, z_saddle, t_top):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--worker", nargs=4)
-    ap.add_argument("--z_saddle", type=float, default=0.0)
+    ap.add_argument("--z_saddle", type=float, default=2.0)
     ap.add_argument("--t_top", type=int, default=5)
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--nmax", type=int, default=1_000_000)

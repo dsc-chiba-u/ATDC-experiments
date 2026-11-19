@@ -160,6 +160,11 @@ def make(name: str):
         pts = np.stack([2 * np.sin(t), 2 * np.cos(t)], axis=1)
         w = np.exp(-0.5 * (t / 0.7) ** 2)
         return GMM(pts, 0.25 ** 2, w, name=name)
+    if name == "many64":          # 64 clusters: needs graph resolution per cluster
+        rng = np.random.default_rng(64)
+        gx, gy = np.meshgrid(np.arange(8), np.arange(8))
+        means = 4.2 * np.stack([gx.ravel(), gy.ravel()], axis=1) + rng.uniform(-0.4, 0.4, (64, 2))
+        return GMM(means, rng.uniform(0.6, 1.2, 64), rng.uniform(0.5, 1.5, 64), name=name)
     if name.startswith("gauss3_noise"):   # e.g. gauss3_noise8 -> 2 + 8 dims
         return add_noise_dims(make("gauss3"), int(name[len("gauss3_noise"):]), 1.0)
     if name.startswith("hier_noise"):
@@ -170,3 +175,4 @@ def make(name: str):
 ALL_2D = ["gauss3", "gauss3_close", "gauss3_border", "hetero", "moons", "circles", "hier",
           "unimodal", "uniform", "banana"]
 HIGH_DIM = ["gauss3_noise3", "gauss3_noise8", "hier_noise3"]
+MANY = ["many64"]   # added after the main runs as a stress test for graph resolution

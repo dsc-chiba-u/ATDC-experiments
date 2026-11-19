@@ -63,13 +63,14 @@ def _linkage_merge_heights(Z, n, q):
 
 
 def hdbscan_tree(X, min_samples, min_cluster_size, method="hdbscan",
-                 cluster_selection_method="eom") -> TreeEstimate:
+                 cluster_selection_method="eom", allow_single_cluster=False) -> TreeEstimate:
     import hdbscan
     from scipy.spatial import cKDTree
     n, d = X.shape
     t0 = time.perf_counter()
     cl = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples,
                          cluster_selection_method=cluster_selection_method,
+                         allow_single_cluster=allow_single_cluster,
                          core_dist_n_jobs=1, gen_min_span_tree=False).fit(X)
     labels = cl.labels_.astype(np.int64)
     dt = time.perf_counter() - t0

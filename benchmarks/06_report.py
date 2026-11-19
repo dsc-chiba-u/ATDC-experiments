@@ -17,7 +17,7 @@ from atdc import baselines as B
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--tag", default="main")
-ap.add_argument("--z_saddle", type=float, default=0.0)
+ap.add_argument("--z_saddle", type=float, default=2.0)
 ap.add_argument("--t_top", type=int, default=5)
 args = ap.parse_args()
 TAG = args.tag
@@ -58,22 +58,26 @@ def table(df, by, name):
 
 
 # ------------------------------------------------------------------ tables
+# every raw file gets a per-data-set and an overall table; "overall" tables
+# exclude gauss3_border, whose true prominence (0.40-0.45) sits just below tau
+# on purpose (it is reported on its own in the per-data-set tables)
+def no_border(df):
+    return df[df.dataset != "gauss3_border"]
+
+
+for path in sorted(RAW.glob("0[13]*_*.csv")):
+    df = pd.read_csv(path)
+    table(df, ["dataset", "method"], f"{path.stem}_by_dataset")
+    table(no_border(df), ["method"], f"{path.stem}_overall")
+for path in sorted(RAW.glob("05_tradeoff_*.csv")):
+    df = pd.read_csv(path)
+    table(no_border(df), ["family", "knob"], f"{path.stem}_overall")
+    table(df, ["dataset", "family", "knob"], f"{path.stem}_by_dataset")
 abl = read(f"01_ablation_{TAG}")
-if abl is not None:
-    table(abl, ["dataset", "method"], f"01_ablation_{TAG}_by_dataset")
-    table(abl, ["method"], f"01_ablation_{TAG}_overall")
 sen = read("02_sensitivity_dev")
 if sen is not None:
-    table(sen, ["varied", "method"], "02_sensitivity_dev_overall")
+    table(no_border(sen), ["varied", "method"], "02_sensitivity_dev_overall")
     table(sen, ["varied", "method", "dataset"], "02_sensitivity_dev_by_dataset")
-cmp_ = read(f"03_competitors_{TAG}")
-if cmp_ is not None:
-    table(cmp_, ["dataset", "method"], f"03_competitors_{TAG}_by_dataset")
-    table(cmp_, ["method"], f"03_competitors_{TAG}_overall")
-trd = read(f"05_tradeoff_{TAG}")
-if trd is not None:
-    table(trd, ["family", "knob"], f"05_tradeoff_{TAG}_overall")
-    table(trd, ["dataset", "family", "knob"], f"05_tradeoff_{TAG}_by_dataset")
 scl = read("04_scaling")
 if scl is not None and "status" in scl:
     ok = scl[scl.status == "ok"]
@@ -85,12 +89,15 @@ if scl is not None and "status" in scl:
         SUMMARY / "04_scaling_failures.csv")
 
 # ----------------------------------------------------------- fig: trade-off
-if trd is not None:
+for _path in sorted(RAW.glob("05_tradeoff_*.csv")):
+    TT = _path.stem[len("05_tradeoff_"):]
+    trd_all = pd.read_csv(_path)
+    trd = no_border(trd_all)
     fams = ["coarse", "global", "atdc", "atdc_budget", "random"]
     for xcol, xlabel in (("cost", "neighbour evaluations (sum of k over kNN queries)"),
                          ("wall", "wall time [s]")):
         fig, axes = plt.subplots(1, 3, figsize=(11, 3.4))
-        for ax, (ycol, ylabel) in zip(axes, (("exact", "peak set exactly right (fraction of runs)"),
+        for ax, (ycol, ylabel) in zip(axes, (("f1", "peak detection F1"),
                                               ("ari", "ARI vs true density basins"),
                                               ("saddle_mae", "saddle log-density MAE"))):
             for f in fams:
@@ -104,9 +111,12 @@ if trd is not None:
         fig.suptitle(f"Accuracy vs cost, mean over data sets and seeds (n={int(trd.n.iloc[0])}, "
                      f"K={int(trd.K.iloc[0])}, tau={trd.tau.iloc[0]})", x=0.01, ha="left", fontsize=10)
         fig.tight_layout()
-        fig.savefig(FIG / f"05_tradeoff_{xcol}_{TAG}.png", dpi=150); plt.close(fig)
+        fig.savefig(FIG / f"05_tradeoff_{xcol}_{TT}.png", dpi=150); plt.close(fig)
     # per data set, exact rate vs cost
-    names = list(dict.fromkeys(trd.dataset))
+    names = list(dict.fromkeys(trd_all.dataset))
+    if len(names) < 2:
+        continue
+    trd = trd_all
     nc = 4; nr = int(np.ceil(len(names) / nc))
     fig, axes = plt.subplots(nr, nc, figsize=(12, 2.6 * nr), sharex=True, sharey=True)
     for ax, name in zip(axes.ravel(), names):
@@ -119,7 +129,7 @@ if trd is not None:
         ax.axis("off")
     axes[0, 0].legend(fontsize=7)
     fig.supxlabel("neighbour evaluations"); fig.supylabel("peak set exactly right")
-    fig.tight_layout(); fig.savefig(FIG / f"05_tradeoff_by_dataset_{TAG}.png", dpi=150); plt.close(fig)
+    fig.tight_layout(); fig.savefig(FIG / f"05_tradeoff_by_dataset_{TT}.png", dpi=150); plt.close(fig)
 
 # ----------------------------------------------------------- fig: ablation
 if abl is not None:
