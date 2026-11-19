@@ -1,5 +1,6 @@
 # project-local conda environment (recreate with environment.yml)
 .conda-env/
+.conda-env-dadapy/
 # Python
 __pycache__/
 *.py[cod]

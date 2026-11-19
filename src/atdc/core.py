@@ -217,18 +217,27 @@ class ATDC:
         self.h[v] = self.h_ref[v]
         return n_new
 
-    def basin_tree(self) -> MergeTree:
+    def basin_tree(self, z_saddle=0.0) -> MergeTree:
+        """Tree of the basin graph from the current values.  With
+        ``z_saddle`` > 0 the unverified saddles are replaced by the optimistic
+        value s + z_saddle * se0 (upper confidence bound)."""
         a, b = self.bg.adj[:, 0], self.bg.adj[:, 1]
-        w = np.minimum(self.s, np.minimum(self.h[a], self.h[b]))
+        s = self.s if z_saddle <= 0 else self.s + z_saddle * self.se0 * (~self.ver_s)
+        w = np.minimum(s, np.minimum(self.h[a], self.h[b]))
         return merge_tree(self.h, self.bg.adj, w, use_mst=False)
 
     # ------------------------------------------------------------------ B
-    def refine(self, tau, z=1.0, budget=None, mode="selective", max_iter=10_000):
+    def refine(self, tau, z=0.0, budget=None, mode="selective", max_iter=10_000, z_saddle=0.0):
         """Stage B.
 
         mode = "selective": verify the peaks and saddles of merge events whose
                log-prominence could still reach tau (R + z*se >= tau), most
                prominent first, recompute the tree, repeat.
+               With z_saddle > 0, additionally: for every currently retained
+               peak, the adjacency at which it would die if the unverified
+               saddles took their optimistic value s + z_saddle*se0 is
+               verified (an unverified saddle that was underestimated by the
+               coarse stage can otherwise leave a false peak).
         mode = "random":    verify uniformly random peaks/adjacencies.
         mode = "all":       verify every peak and adjacency.
         ``budget`` is the maximal number of fine density evaluations (points);
@@ -265,8 +274,13 @@ class ATDC:
                 # peaks that never die (one per connected component) are
                 # always retained, so their height is verified too
                 roots = tb.roots[~self.ver_h[tb.roots]]
+                extra = np.empty(0, dtype=np.int64)
+                if z_saddle > 0:
+                    to = self.basin_tree(z_saddle)
+                    kept = dy[R >= tau]
+                    extra = to.edge[np.isin(to.dying, kept) & ~self.ver_s[to.edge]]
                 self.tm.add("refine_tree", t0)
-                if cand.size == 0 and done.size == 0 and roots.size == 0:
+                if cand.size == 0 and done.size == 0 and roots.size == 0 and extra.size == 0:
                     break
                 if left() <= 0:
                     stop = "budget"
@@ -277,7 +291,7 @@ class ATDC:
                     cap = int(max(1, left() // (3 * self.t_top)))
                     cand = cand[:cap]
                 self._verify(list(dict.fromkeys(dy[cand].tolist() + sv[done].tolist() + roots.tolist())),
-                             list(dict.fromkeys(ed[cand].tolist())))
+                             list(dict.fromkeys(ed[cand].tolist() + extra.tolist())))
                 self.iterations += 1
             else:
                 stop = "max_iter"

@@ -20,5 +20,9 @@ dependencies:
   - psutil
   - pip
   - pip:
-      - dadapy==0.3.4
       - automato
+#
+# DADApy 0.3.4 needs numpy < 2 and therefore lives in a second environment,
+# called through a subprocess by benchmarks/common.py:
+#
+#   mamba create -p ./.conda-env-dadapy -c conda-forge python=3.11 "numpy<2" scipy scikit-learn pip
