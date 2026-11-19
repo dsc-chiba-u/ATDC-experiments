@@ -1,0 +1,32 @@
+{
+ "args": {
+  "n": 200000,
+  "seeds": 5,
+  "seed0": 300,
+  "K": 100,
+  "tau": 0.5,
+  "repeat": 3,
+  "tag": "n200k",
+  "no_full": false,
+  "no_hdbscan": true,
+  "datasets": [
+   "gauss3_close",
+   "hetero",
+   "moons",
+   "circles",
+   "hier",
+   "unimodal",
+   "gauss3_noise3",
+   "hier_noise3",
+   "many64"
+  ]
+ },
+ "env": {
+  "python": "3.11.18",
+  "numpy": "2.4.6",
+  "scipy": "1.17.1",
+  "sklearn": "1.9.1",
+  "machine": "Linux-6.8.0-136-generic-x86_64-with-glibc2.35",
+  "threads": "1"
+ }
+}
