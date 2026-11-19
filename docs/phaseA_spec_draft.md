@@ -246,13 +246,29 @@ vertices are redrawn should not be reported as structure. The converse fails:
 a group too small for the chosen m (section 5) or for K is missed in every
 replicate, and the partition without it is perfectly stable.
 
-### 10.3 Recommendation **[A]**
+### 10.3 Stable thresholds **[A]**
 
-`recommend`: among the grid values τ ≥ τ₀ with `stability ≥ 0.9` and
-`count_agreement ≥ 0.8`, the smallest one (the finest stable partition); if
-none qualifies, the coarsest partition (τ = +∞) with a message. The result
-lists all qualifying plateaus, not only the chosen one. The documentation must
-not call the chosen number of clusters "the" number of clusters.
+`threshold = "auto"` is always the noise floor τ₀; resampling never changes
+the reported partition silently. After a stability path has been computed:
+
+* `summary` and the report print the stability at the reported threshold and
+  **warn below 0.8**;
+* `recommend` lists the grid values τ ≥ τ₀ whose partition has at least two
+  clusters and `stability ≥ 0.8`, finest first, each with its number of
+  clusters and stability. If the list is empty the message is "no partition
+  into several clusters is stable at this resolution". A single cluster is
+  trivially stable and is never listed.
+
+The value 0.8 comes from the Phase A development runs (correct partitions had
+stabilities of 0.83–0.89, wrong ones 0.4–0.65) and is in the range used for
+related indices (prediction strength 0.8–0.9, Tibshirani & Walther 2005;
+clusterwise Jaccard 0.75–0.85, Hennig 2007). It is a convention, not a test.
+A first version of the rule (stability ≥ 0.9 and the same number of clusters
+in 80 % of the replicates, the finest such threshold replacing the default
+partition) was rejected: on 16 public tables it replaced good partitions by
+coarser ones or by a single cluster (`phaseA_report.md`, section 5). The
+documentation must not call any listed number of clusters "the" number of
+clusters.
 
 ## 11. Comparison with an existing partition
 
@@ -296,7 +312,7 @@ agree exactly (section 14).
 | d > 50 with `dim = "ambient"` | warning (prominences scale with d) |
 | column scale ratio > 100 | warning |
 | requested k not attainable | error / warning (section 8) |
-| stability below 0.9 at the reported threshold | warning in `summary` and in the report |
+| stability below 0.8 at the reported threshold | warning in `summary` and in the report |
 
 Messages have the same wording in both languages (kept in the specification
 repository as a table).

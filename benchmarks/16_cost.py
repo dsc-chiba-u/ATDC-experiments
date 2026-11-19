@@ -8,7 +8,9 @@ What is varied
   backend   kdtree (exact), brute (exact, no index), hnsw, nndescent
             (approximate; index on all data)
 Reference methods on the same data: the full-data tree of the same estimator
-(``full``; exact neighbours), GUDHI ToMATo and HDBSCAN (both packages).
+(``full``; exact neighbours), GUDHI ToMATo, HDBSCAN, densityCut (R) and
+DADApy's ADP, each through its own package with the settings of
+15_competitors_A.py.
 
 For the approximate back-ends the worker also reports, outside the timed part,
 the recall of the K neighbours of the vertices, the largest change of a vertex
@@ -85,6 +87,33 @@ def worker(method, data, n, seed):
         cl = hdbscan.HDBSCAN(min_cluster_size=max(n // 100, 10), min_samples=10, core_dist_n_jobs=1).fit(X)
         wall = time.perf_counter() - t0
         out.update(m=n, n_est=int(cl.labels_.max() + 1), frac_noise=float(np.mean(cl.labels_ < 0)))
+    elif method in ("densitycut", "adp"):
+        # separate interpreter (R, or the numpy<2 environment): time measured
+        # inside it, memory = peak RSS of that child process
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            if method == "densitycut":
+                X.tofile(tmp / "X.bin")
+                (tmp / "meta.json").write_text(json.dumps(dict(n=n, d=d, seed=seed)))
+                rs = ROOT / ".conda-env-r" / "bin" / "Rscript"
+                subprocess.run([str(rs), str(ROOT / "benchmarks" / "r" / "densitycut_run.R"), str(tmp)], check=True,
+                               capture_output=True, env={"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1",
+                                                         "PATH": f"{rs.parent}:/usr/bin:/bin"})
+                o = json.loads((tmp / "out.json").read_text())
+                wall, nest = o["wall"], o["n_clusters"]
+            else:
+                np.save(tmp / "X.npy", X)
+                subprocess.run([str(ROOT / ".conda-env-dadapy" / "bin" / "python"),
+                                str(ROOT / "benchmarks" / "dadapy_worker.py"), str(tmp / "X.npy"), str(tmp / "o.npz"),
+                                str(K + 1), "1.65", "PAk"], check=True, capture_output=True)
+                o = np.load(tmp / "o.npz")
+                wall, nest = float(o["time"]), int(len(np.unique(o["labels"])))
+        rc = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+        out.update(m=n, n_est=nest, wall=wall, rss_added_mb=np.nan, rss_peak_mb=rc / 1024, rss_child=True)
+        print("RESULT " + json.dumps(out, default=float))
+        return
     else:
         raise KeyError(method)
     rss1 = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
@@ -119,7 +148,7 @@ if __name__ == "__main__":
             grid.append((f"sub:kdtree:{m}", "hier", n))
         grid += [("full", "hier", n), ("tomato_gudhi", "hier", n)]
         if n <= 200_000:
-            grid.append(("hdbscan", "hier", n))
+            grid += [("hdbscan", "hier", n), ("densitycut", "hier", n), ("adp", "hier", n)]
     for data, ns in (("hier_noise8", (20_000, 200_000, 1_000_000)), ("hier_noise48", (20_000, 200_000, 1_000_000)),
                      ("pbmc68k", (0,)), ("ng20_minilm", (0,)), ("ng20_mpnet", (0,))):
         for n in ns:
@@ -134,6 +163,8 @@ if __name__ == "__main__":
                 grid += [("full", data, n), ("hdbscan", data, n)]
             if n <= 20_000 or data == "pbmc68k":
                 grid.append(("tomato_gudhi", data, n))
+            if data == "pbmc68k":
+                grid.append(("densitycut", data, n))
     rows = []
     for method, data, n in grid:
         for seed in range(700, 700 + args.seeds):

@@ -1,0 +1,46 @@
+{
+ "args": {
+  "n": 20000,
+  "seed0": 500,
+  "seeds": 10,
+  "K": 100,
+  "tau": 0.5,
+  "ms": [
+   1000,
+   4000,
+   8000
+  ],
+  "datasets": [
+   "gauss3",
+   "gauss3_close",
+   "gauss3_border",
+   "hetero",
+   "moons",
+   "circles",
+   "hier",
+   "unimodal",
+   "uniform",
+   "banana",
+   "gauss3_noise3",
+   "gauss3_noise8",
+   "hier_noise3",
+   "many64",
+   "rare1",
+   "rare5",
+   "many16",
+   "blobs5_d10"
+  ],
+  "jobs": 10,
+  "tag": "main",
+  "automato": false,
+  "no_r": false
+ },
+ "env": {
+  "python": "3.11.18",
+  "numpy": "2.4.6",
+  "scipy": "1.17.1",
+  "sklearn": "1.9.1",
+  "machine": "Linux-6.8.0-136-generic-x86_64-with-glibc2.35",
+  "threads": "1"
+ }
+}

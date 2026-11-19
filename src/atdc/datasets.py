@@ -176,6 +176,12 @@ def make(name: str):
         gx, gy = np.meshgrid(np.arange(g), np.arange(g))
         means = 4.2 * np.stack([gx.ravel(), gy.ravel()], axis=1) + rng.uniform(-0.4, 0.4, (C, 2))
         return GMM(means, rng.uniform(0.6, 1.2, C), rng.uniform(0.5, 1.5, C), name=name)
+    if name.startswith("simplex4_"):      # simplex4_s5_d10: 4 equal unit Gaussians, pairwise distance 5, d = 10
+        sep, d = name[len("simplex4_"):].split("_")
+        sep, d = float(sep[1:]), int(d[1:])
+        means = np.zeros((4, d))
+        means[:, :3] = np.array([[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]]) * sep / (2 * 2 ** 0.5)
+        return GMM(means, 1.0, [1, 1, 1, 1], name=name)
     if name.startswith("blobs5_d"):       # 5 isotropic components of unequal scale filling d dims
         d = int(name[len("blobs5_d"):])
         means = np.zeros((5, d))

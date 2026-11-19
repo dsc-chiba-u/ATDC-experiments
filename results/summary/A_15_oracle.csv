@@ -1,0 +1,11 @@
+group,method,k_correct,ari,nmi,ari_nonnoise,frac_noise,n_est,n_true
+other target,densitycut,0.872,0.931,0.928,0.931,0.0,6.956,7.056
+same target,sub8000,0.822,0.911,0.909,0.911,0.0,6.794,7.056
+same target,full,0.811,0.91,0.91,0.91,0.0,6.872,7.056
+same target,sub4000,0.806,0.909,0.908,0.909,0.0,6.744,7.056
+same target,tomato_w,0.761,0.908,0.908,0.908,0.0,6.961,7.056
+other target,adp,0.711,0.899,0.907,0.899,0.0,7.033,7.056
+near target,tomato_logdtm,0.767,0.896,0.898,0.896,0.0,7.139,7.056
+same target,sub1000,0.778,0.895,0.9,0.895,0.0,5.928,7.056
+other target,hdbscan,0.467,0.543,0.637,0.727,0.293,6.722,7.056
+other target,leiden,0.256,0.525,0.609,0.525,0.0,11.478,7.056
