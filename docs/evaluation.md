@@ -115,8 +115,8 @@ is 0.89 against 0.89. The apparent advantage did not replicate.
 | τ = 0.3 / 0.75 / 1.0 | 0.60 / 0.96 / 0.90 | 0.696 / 0.968 / 0.914 | — |
 
 The statistical parameters K and τ move the result far more than any Stage B
-parameter, for every method alike (at K = 30 full data scores 0.00 exact and
-uniform refinement 0.57): a threshold of 0.5 is inside the noise of a
+parameter, for every method alike (at K = 30 full data scores 0.10 exact and
+uniform refinement 0.50): a threshold of 0.5 is inside the noise of a
 30-neighbour estimate. Stage B does not change that.
 
 ## 3. Statistical versus computational accuracy
