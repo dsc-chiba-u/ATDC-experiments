@@ -128,6 +128,29 @@ class MergeTree:
                 uf.p[rb] = ra
         return np.array([peak[uf.find(i)] for i in range(self.n)], dtype=np.int64)
 
+    def labels_keep(self, keep: np.ndarray) -> np.ndarray:
+        """Labels for an arbitrary set of retained peaks (boolean per vertex).
+
+        Same replay as :meth:`labels`, but a merge is refused when the lower
+        of the two peaks is in ``keep`` instead of when its prominence
+        reaches a threshold.  Roots are always retained.  With
+        ``keep[v] = persistence(v) >= tau`` this equals ``labels(tau)``.
+        """
+        uf = _UF(self.n)
+        peak = list(range(self.n))
+        fl = self.f.tolist()
+        kp = np.asarray(keep, dtype=bool).tolist()
+        for (u, v) in self.edge_uv.tolist():
+            ra, rb = uf.find(u), uf.find(v)
+            if ra == rb:
+                continue
+            pa, pb = peak[ra], peak[rb]
+            if (fl[pa], -pa) < (fl[pb], -pb):
+                ra, rb, pa, pb = rb, ra, pb, pa
+            if not kp[pb]:
+                uf.p[rb] = ra
+        return np.array([peak[uf.find(i)] for i in range(self.n)], dtype=np.int64)
+
     def merge_heights(self, q: np.ndarray) -> np.ndarray:
         """Matrix M[i, j] = m(q[i], q[j]) for a small set of query vertices.
 

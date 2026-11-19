@@ -78,3 +78,39 @@ def evaluate(est, truth, tau, margin=0.05) -> dict:
         out["ari_nonnoise"] = float(adjusted_rand_score(L[keep], np.asarray(est.labels)[keep])) \
             if keep.sum() > 1 else np.nan
     return out
+
+
+def evaluate_plus(est, truth, tau, dist, X, top_tol=0.25) -> dict:
+    """:func:`evaluate` plus peak *location* accuracy (added in Phase 2).
+
+    ``evaluate`` counts a true mode as detected when an estimated peak lies
+    anywhere in its basin.  That says nothing about where in the basin.  Here,
+    for every detected mode:
+      top_deficit  true log-density at the mode minus true log-density at the
+                   estimated peak (0 = exactly at the top; scale-free);
+      loc_err      Euclidean distance between the two in the structured
+                   coordinates;
+    and ``tp_top`` counts the modes whose estimated peak is within ``top_tol``
+    of the top in log-density, with ``f1_top`` the F1 score using that
+    stricter notion of a true positive.
+    """
+    out = evaluate(est, truth, tau)
+    p_true, h_true, _ = truth.modes(tau)
+    L = truth.labels(tau)
+    where = L[est.peak_idx]
+    c = dist.core_dim
+    f_at = dist.logpdf(np.asarray(X)[est.peak_idx])
+    defi, loc = [], []
+    for a in range(len(p_true)):
+        cand = np.flatnonzero(where == a)
+        if cand.size:
+            j = cand[np.argmax(est.peak_h[cand])] if np.all(np.isfinite(est.peak_h[cand])) else cand[0]
+            defi.append(h_true[a] - f_at[j])
+            loc.append(np.linalg.norm(np.asarray(X)[est.peak_idx[j], :c] - truth.ref[p_true[a]]))
+    defi = np.array(defi)
+    tp_top = int(np.sum(defi <= top_tol))
+    n_true, n_est = len(p_true), len(est.peak_idx)
+    out.update(top_deficit=float(defi.mean()) if defi.size else np.nan,
+               loc_err=float(np.mean(loc)) if loc else np.nan, tp_top=tp_top,
+               f1_top=2 * tp_top / (n_true + n_est) if (n_true + n_est) else 1.0)
+    return out
