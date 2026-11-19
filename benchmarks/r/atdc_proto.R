@@ -93,7 +93,45 @@ tree_peaks <- function(tree, tau) {
   c(tree$roots, tree$dying[tree$f[tree$dying] - tree$level >= tau])
 }
 
-subsample_tree <- function(X, idx, K = 100, k_graph = 10, nn = c("RANN", "dbscan", "FNN"),
+# Exact search by matrix products, base R only (for dimensions where k-d trees
+# stop helping).  Work arrays stay below `block` doubles.  Each block is one
+# BLAS call on augmented matrices, [x, |x|^2] . [-2q, 1] = |x|^2 - 2 x.q, so
+# that no R-level arithmetic touches the n x block array.
+#
+# Distance from each vertex to its K-th nearest row of X.  The neighbours are
+# found from |x|^2 - 2 x.q; their distances are then recomputed directly, as in
+# the Python reference.
+mat_kth_distance <- function(X, idx, K, block = 8e6) {
+  n <- nrow(X); m <- length(idx)
+  Xa <- cbind(X, rowSums(X^2))
+  step <- max(1L, as.integer(block %/% n)); r <- numeric(m)
+  for (s in seq(1L, m, by = step)) {
+    cols <- s:min(m, s + step - 1L)
+    Q <- X[idx[cols], , drop = FALSE]
+    d2 <- tcrossprod(Xa, cbind(-2 * Q, 1))           # n x step; one query per column
+    d2[cbind(idx[cols], seq_along(cols))] <- Inf     # the vertex itself
+    for (j in seq_along(cols)) {
+      v <- d2[, j]
+      nb <- which(v <= sort.int(v, partial = K)[K])
+      r[cols[j]] <- sqrt(max(rowSums((X[nb, , drop = FALSE] - rep(Q[j, ], each = length(nb)))^2)))
+    }
+  }
+  r
+}
+
+# Index of the nearest row of V for every row of X: argmax of x.v - |v|^2 / 2.
+mat_nearest <- function(X, V, block = 8e6) {
+  n <- nrow(X); m <- nrow(V)
+  Va <- cbind(V, -0.5 * rowSums(V^2))
+  step <- max(1L, as.integer(block %/% m)); out <- integer(n)
+  for (s in seq(1L, n, by = step)) {
+    rows <- s:min(n, s + step - 1L)
+    out[rows] <- max.col(tcrossprod(cbind(X[rows, , drop = FALSE], 1), Va), ties.method = "first")
+  }
+  out
+}
+
+subsample_tree <- function(X, idx, K = 100, k_graph = 10, nn = c("RANN", "dbscan", "FNN", "matrix"),
                            loop = merge_loop_r) {
   nn <- match.arg(nn)
   n <- nrow(X); d <- ncol(X); m <- length(idx)
@@ -103,7 +141,8 @@ subsample_tree <- function(X, idx, K = 100, k_graph = 10, nn = c("RANN", "dbscan
   r <- switch(nn,
     RANN = RANN::nn2(X, V, k = K + 1)$nn.dists[, K + 1],
     FNN = FNN::get.knnx(X, V, k = K + 1)$nn.dist[, K + 1],
-    dbscan = dbscan::kNN(X, k = K + 1, query = V)$dist[, K + 1])
+    dbscan = dbscan::kNN(X, k = K + 1, query = V)$dist[, K + 1],
+    matrix = mat_kth_distance(X, idx, K))
   tm["query"] <- proc.time()[[3]] - t0
   f <- knn_log_density(r, K, n, d)
   t0 <- proc.time()[[3]]
@@ -114,13 +153,13 @@ subsample_tree <- function(X, idx, K = 100, k_graph = 10, nn = c("RANN", "dbscan
   t0 <- proc.time()[[3]]
   tree <- merge_tree(f, edges, loop = loop)
   tm["tree"] <- proc.time()[[3]] - t0
-  list(f = f, r = r, edges = edges, tree = tree, idx = idx, V = V, times = tm)
+  list(f = f, r = r, edges = edges, tree = tree, idx = idx, V = V, times = tm, nn = nn)
 }
 
 label_all <- function(fit, X, tau) {
   t0 <- proc.time()[[3]]
   vlab <- tree_labels(fit$tree, tau)
-  nnv <- RANN::nn2(fit$V, X, k = 1)$nn.idx[, 1]
+  nnv <- if (identical(fit$nn, "matrix")) mat_nearest(X, fit$V) else RANN::nn2(fit$V, X, k = 1)$nn.idx[, 1]
   fit$times["label"] <- proc.time()[[3]] - t0
   list(labels = fit$idx[vlab][nnv], times = fit$times)   # label = data index of the peak
 }

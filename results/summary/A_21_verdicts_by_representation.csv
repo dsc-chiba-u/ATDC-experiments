@@ -1,0 +1,4 @@
+representation,tables,consistent,inconclusive,not supported by density,kmeans_ari_vs_classes,ari_tree_vs_classes,consistent_tables,not_supported_tables
+as given,16,2,13,1,0.391,0.321,satimage pendigits,phoneme
+10 principal components,16,2,13,1,0.395,0.279,satimage pendigits,phoneme
+5 principal components,16,1,14,1,0.38,0.279,satimage,phoneme

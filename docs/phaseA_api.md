@@ -23,16 +23,25 @@ be confirmed before Phase B; code examples are designs, not tested code.
   second in plain R and in plain Python. There is nothing for a compiled core
   to speed up that the neighbour libraries do not already do.
 * The R prototype reproduced the Python reference exactly on the same data and
-  vertices (densities to 5e-15, identical graph, peaks and labels), with
-  neither sharing code. Agreement is achievable through the specification.
+  vertices in 15 of 15 configurations (densities to 9e-14, identical graph,
+  peaks and labels), with neither sharing code. Agreement is achievable
+  through the specification.
+* The price, measured: in ten dimensions and more R is two to three times
+  slower than Python (seconds), because of the neighbour search, not the
+  tree. One small compiled routine in the R package would close the gap; it is
+  not proposed for version 1 (report §4.3).
 * No compiled code means: `pip install atdc` and `install.packages("atdc")`
   never need a compiler, and neither package needs the other language.
 
 Dependencies. Python: numpy, scipy, scikit-learn, pandas, matplotlib. R:
-`Imports:` one neighbour-search package (RANN or FNN, chosen by the timing in
-the report), `stats`, `graphics`, `utils`; `Suggests:` ggplot2, knitr,
-rmarkdown, testthat, jsonlite. Approximate neighbour search stays optional in
-both (Python: pynndescent/hnswlib extras; R: RcppHNSW in `Suggests`).
+`Imports:` one k-d tree package (RANN proposed: no dependencies of its own,
+within 10 % of FNN; `dbscan::kNN` is faster from ten dimensions but slower in
+two), `stats`, `graphics`, `utils`; above about 15 dimensions a matrix search
+in base R; `Suggests:` ggplot2, knitr,
+rmarkdown, testthat, jsonlite. No approximate neighbour search in version 1:
+measured in Phase A, an index on all rows costs more than the m exact queries
+it would replace (report §4), so pynndescent, hnswlib and RcppHNSW are not
+dependencies, not even optional ones.
 
 ### Repositories
 

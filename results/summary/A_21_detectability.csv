@@ -1,0 +1,17 @@
+dataset,n,d,k_reference,kmeans_ari_vs_classes,k_tree,ari_tree_vs_kmeans,ari_tree_vs_classes,detectability,sim_k_median,sim_ari_mean,verdict
+iris,150,4,3,0.62,2,0.57,0.568,0.0,2.0,0.579,inconclusive: resolution too low
+wine,178,13,3,0.897,1,0.0,0.0,0.0,2.0,0.362,inconclusive: resolution too low
+penguins,342,4,3,0.793,2,0.615,0.655,0.0,2.0,0.618,inconclusive: resolution too low
+breast_cancer,569,30,2,0.654,1,0.0,0.0,0.0,1.0,0.0,inconclusive: resolution too low
+vehicle,846,18,4,0.069,2,0.367,0.077,0.0,2.0,0.433,inconclusive: resolution too low
+banknote-authentication,1372,4,2,0.013,4,0.075,0.712,0.05,1.0,0.075,inconclusive: resolution too low
+digits,1797,61,10,0.468,4,0.41,0.315,0.0,3.0,0.233,inconclusive: resolution too low
+mfeat-fourier,2000,76,10,0.397,6,0.168,0.154,0.0,2.0,0.044,inconclusive: resolution too low
+segment,2310,18,7,0.476,9,0.582,0.445,0.0,3.0,0.345,inconclusive: resolution too low
+phoneme,5404,5,2,0.12,9,0.233,0.069,1.0,2.0,0.932,not supported by density
+wall-robot-navigation,5456,24,4,0.052,24,0.419,0.03,0.0,3.0,0.336,inconclusive: resolution too low
+optdigits,5620,62,10,0.462,8,0.512,0.684,0.0,5.0,0.339,inconclusive: resolution too low
+satimage,6430,36,6,0.529,8,0.679,0.597,0.0,5.5,0.65,consistent
+pendigits,10992,16,10,0.553,13,0.659,0.687,0.1,9.0,0.802,consistent
+MagicTelescope,19020,10,2,0.007,4,0.174,0.038,0.0,1.0,-0.0,inconclusive: resolution too low
+letter,20000,16,26,0.149,27,0.164,0.103,0.0,13.0,0.164,inconclusive: resolution too low

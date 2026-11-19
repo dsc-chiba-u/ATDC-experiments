@@ -57,8 +57,13 @@ the meaning they must have.
 For a vertex v, `r_j(v)` is the Euclidean distance from v to its j-th nearest
 **other** row of `X` (the row of v itself is excluded; a different row with
 the same coordinates is not). Neighbours are searched in **all** n rows, not
-only among the vertices. The search is exact by default. An approximate search
-is an explicit option and is recorded in the result.
+only among the vertices. The search is exact. (Phase A measured approximate
+indexes — HNSW, NN-descent — and found no use for them here: only m queries
+are made, so building an index on all n rows costs more than the exact
+queries, and at recall 0.85–0.90 the peaks change; report §4. An approximate
+search is therefore not part of version 1.) An implementation may choose
+between a k-d tree and blocked matrix products; both are exact and must give
+the same neighbours up to ties (§6).
 
 ### 4.2 Log-density
 
@@ -66,6 +71,13 @@ is an explicit option and is recorded in the result.
 f(v) = digamma(K) − log(n − 1) − log V_D − D · log r_K(v)
 V_D  = π^(D/2) / Γ(D/2 + 1)
 ```
+
+Open item: the two Phase A prototypes (`src/atdc/density.py`,
+`benchmarks/r/atdc_proto.R`) use `log n` where this draft says `log(n − 1)`
+(the vertex itself is excluded, so n − 1 rows are searched). The difference
+is the same constant for every vertex: no prominence, tree or label depends
+on it, only the reported peak heights (by 1/n). One of the two is fixed
+before the conformance data are generated.
 
 `D` is the value of `dim`: the number of columns (`"ambient"`), a number given
 by the caller, or (`"auto"`) the intrinsic-dimension estimate

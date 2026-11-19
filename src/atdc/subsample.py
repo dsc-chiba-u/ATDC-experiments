@@ -38,16 +38,24 @@ from .mergetree import merge_tree
 
 # ------------------------------------------------------------ neighbour search
 
-def _brute_knn(Q, X, k, exclude=None, block=2048):
+# Work arrays of the exact search are kept below this many elements (64 MB of
+# doubles), whatever n, m and d are; see results/raw/16_cost_brute2.csv.
+_BLOCK = 8_000_000
+
+
+def _brute_knn(Q, X, k, exclude=None, block=_BLOCK):
     """Exact k nearest rows of X for every row of Q.  ``exclude[i]`` is the row
     of X that is Q[i] itself (dropped).  Returns (dist, ind), sorted."""
     Q = np.asarray(Q)
     x2 = np.einsum("ij,ij->i", X, X)
     D = np.empty((len(Q), k)); I = np.empty((len(Q), k), dtype=np.int64)
-    step = max(1, int(block * 20000 / max(len(X), 1)))
+    step = max(1, int(block / max(len(X), 1)))
     for s in range(0, len(Q), step):
         q = Q[s:s + step]
-        d2 = x2[None, :] - 2.0 * (q @ X.T) + np.einsum("ij,ij->i", q, q)[:, None]
+        d2 = q @ X.T                                    # one work array, updated in place
+        d2 *= -2.0
+        d2 += x2[None, :]
+        d2 += np.einsum("ij,ij->i", q, q)[:, None]
         if exclude is not None:
             d2[np.arange(len(q)), exclude[s:s + step]] = np.inf
         part = np.argpartition(d2, k - 1, axis=1)[:, :k]
@@ -58,9 +66,15 @@ def _brute_knn(Q, X, k, exclude=None, block=2048):
     return D, I
 
 
-def _exact_radius(X, q, ind):
+def _exact_radius(X, q, ind, block=_BLOCK):
     """Distances from q[i] to X[ind[i]] computed directly (no cancellation)."""
-    return np.sqrt(np.einsum("ijk,ijk->ij", X[ind] - q[:, None, :], X[ind] - q[:, None, :]))
+    ind = np.asarray(ind)
+    out = np.empty(ind.shape)
+    step = max(1, int(block / max(ind.shape[1] * X.shape[1], 1)))
+    for s in range(0, len(q), step):
+        diff = X[ind[s:s + step]] - q[s:s + step, None, :]
+        out[s:s + step] = np.sqrt(np.einsum("ijk,ijk->ij", diff, diff))
+    return out
 
 
 class Neighbours:
@@ -131,9 +145,12 @@ def nearest_vertex(X, V, backend="kdtree"):
         return cKDTree(V).query(X, 1)[1]
     v2 = np.einsum("ij,ij->i", V, V)
     out = np.empty(len(X), dtype=np.int64)
-    step = max(1, int(4096 * 1000 / max(len(V), 1)))
+    step = max(1, int(_BLOCK / max(len(V), 1)))
     for s in range(0, len(X), step):
-        out[s:s + step] = np.argmin(v2[None, :] - 2.0 * (X[s:s + step] @ V.T), axis=1)
+        d2 = X[s:s + step] @ V.T
+        d2 *= -2.0
+        d2 += v2[None, :]
+        out[s:s + step] = np.argmin(d2, axis=1)
     return out
 
 

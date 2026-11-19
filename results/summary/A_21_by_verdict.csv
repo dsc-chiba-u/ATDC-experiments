@@ -1,0 +1,4 @@
+verdict,tables,kmeans_ari_vs_classes,ari_tree_vs_classes,detectability
+consistent,2,0.541,0.642,0.05
+inconclusive: resolution too low,13,0.389,0.291,0.004
+not supported by density,1,0.12,0.069,1.0

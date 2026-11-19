@@ -36,6 +36,10 @@ ap.add_argument("--configs", nargs="*", default=["hier:20000:1000", "hier:20000:
                                                  "hier:200000:1000", "hier:200000:8000", "hier:1000000:1000",
                                                  "hier_noise8:20000:1000", "hier_noise8:200000:1000",
                                                  "blobs5_d20:20000:1000", "rare1:20000:4000"])
+ap.add_argument("--nn", nargs="*", default=["RANN", "FNN", "dbscan"],
+                help="R neighbour search: RANN, FNN, dbscan (k-d trees) or matrix (base R matrix products)")
+ap.add_argument("--backend", default="kdtree", choices=["kdtree", "auto"],
+                help="Python search for the vertex densities; auto = matrix products above 15 dimensions")
 args = ap.parse_args()
 
 rows = []
@@ -46,7 +50,8 @@ for cfg in args.configs:
     best = None
     for _ in range(args.repeat):
         t0 = time.perf_counter()
-        t = SubsampleTree(X, m=m, K=args.K, seed=600)
+        t = SubsampleTree(X, m=m, K=args.K, seed=600,
+                          backend="brute" if args.backend == "auto" and X.shape[1] > 15 else "kdtree")
         e = t.estimate(args.tau)
         wall = time.perf_counter() - t0
         if best is None or wall < best[0]:
@@ -57,7 +62,7 @@ for cfg in args.configs:
         X.tofile(tmp / "X.bin")
         (tmp / "meta.json").write_text(json.dumps(dict(
             n=n, d=X.shape[1], K=args.K, k_graph=10, tau=args.tau, idx=t.idx.tolist(), cpp=True,
-            nn=["RANN", "FNN", "dbscan"], repeat=args.repeat)))
+            nn=args.nn, repeat=args.repeat)))
         t0 = time.perf_counter()
         subprocess.run([str(RSCRIPT), str(ROOT / "benchmarks" / "r" / "cross_language.R"), str(tmp)],
                        check=True, env={"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1", "PATH": f"{RSCRIPT.parent}:/usr/bin:/bin"})
@@ -74,8 +79,9 @@ for cfg in args.configs:
                ari_py_r=float(adjusted_rand_score(lab_py, lab_r)),
                n_merges_py=len(t.tree.level), n_merges_r=out["n_merges"])
     py_t = {k: v for k, v in e.times.items()}
-    rows.append({**base, **cmp, "impl": "python", "total": wall, **{"t_" + k: v for k, v in py_t.items()}})
-    for key in ("RANN_r", "RANN_cpp", "FNN_r", "FNN_cpp", "dbscan_r", "dbscan_cpp"):
+    rows.append({**base, **cmp, "impl": "python", "backend": t.backend, "total": wall,
+                 **{"t_" + k: v for k, v in py_t.items()}})
+    for key in [f"{a}_{b}" for a in args.nn for b in ("r", "cpp")]:
         if key in out:
             rows.append({**base, **cmp, "impl": "R:" + key, "total": out[key]["total"],
                          **{"t_" + k: v for k, v in out[key]["times"].items()}, "r_process": r_proc})

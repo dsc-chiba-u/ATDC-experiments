@@ -3,6 +3,18 @@
 Proof-of-concept implementation and reproducible benchmarks for Adaptive
 Topological Density Clustering (ATDC).
 
+**Current state (Phase A, November 2026).** The research question below was
+answered in the negative (Phases 1–2). The project then turned to research
+software: is the method that selective refinement could not beat — the uniform
+subsample density cluster tree — a sound basis for an R and a Python package?
+Phase A measured that before any package was written. Its report is
+[`docs/phaseA_report.md`](docs/phaseA_report.md). The judgement: the software
+is sound, the purpose first stated for it is not supported — **GO as a density
+cluster tree toolkit** for data with at least about a thousand rows and about
+ten dimensions or fewer; **not as a validator of k-means analyses**. The
+decision is pending with the maintainers. No package exists yet; when built, the packages will live in their own
+repository and this one remains the research record.
+
 ## Question
 
 > Accurate recovery of density cluster hierarchies may not require uniformly
@@ -45,10 +57,45 @@ by nearest vertex.
   ideas (DBSCAN++-style subsample density, ToMATo's tree) and is not claimed as
   new.
 
+## Phase A in brief
+
+* **Subsample size.** From 4 000 vertices the subsample tree is as accurate as
+  the tree on all 20 000 points (exact recovery of the true modes 0.86 against
+  0.84). What it loses is predictable: a cluster is found when about 12 or
+  more vertices fall into it, so a 0.5 % cluster needs m ≥ 4 000. The loss is
+  invisible to a stability diagnostic.
+* **Dimension.** Right up to d ≈ 5, usable at 10, wrong from 20 when the extra
+  coordinates are noise — with all points as well. On 50-d expression data and
+  384-d text embeddings as given the tree is unstable; after reduction to 5–10
+  dimensions it is level with or above HDBSCAN and at or below k-means.
+* **Existing tools.** Same partition as GUDHI's ToMATo (ARI 0.909 against
+  0.908 on the true basins), level with densityCut (0.931 over 18 sets; 0.927
+  against 0.957 for the tree without the one set built to be undecidable), far
+  above HDBSCAN at its defaults (0.464).
+* **Sample size.** The tree needs 100–400 rows per cluster where k-means needs
+  a few dozen in total; on small tables it reports one cluster where k-means is
+  right.
+* **As a check of a k-means partition.** On 16 public tables the tree
+  confirmed the partition on 2, contradicted it on 1 and could say nothing on
+  13, as given and after reduction by principal components alike. A parametric
+  check keeps that silence from being read as a refutation; it cannot turn it
+  into an answer.
+* **Cost.** A million rows in 2-D: 0.9 s and 0.2 GB against 16 s and 3.3 GB
+  for ToMATo on all points. Approximate neighbour search does not pay (the
+  index costs more than the m exact queries) and is dropped.
+* **R and Python.** An R prototype written from the description reproduces the
+  Python reference exactly on shared vertices (densities to 9e-14, identical
+  graph, peaks and labels) at 1.0–1.3 times the Python time in 2-D and two to
+  three times from ten dimensions.
+
 ## Documents
 
 | File | Content |
 |---|---|
+| [`docs/phaseA_report.md`](docs/phaseA_report.md) | Phase A: measurements, judgement, decisions needed |
+| [`docs/phaseA_spec_draft.md`](docs/phaseA_spec_draft.md) | common specification for both languages, draft 0.1 |
+| [`docs/phaseA_api.md`](docs/phaseA_api.md) | architecture, R and Python APIs, conformance plan (proposal) |
+| [`docs/phaseA_software_survey.md`](docs/phaseA_software_survey.md) | existing software, literature, SoftwareX requirements |
 | [`docs/literature_review.md`](docs/literature_review.md) | competing methods, what is not new, the remaining claim |
 | [`docs/algorithm_design.md`](docs/algorithm_design.md) | candidate designs, the chosen one, pseudocode, cost, limits |
 | [`docs/evaluation.md`](docs/evaluation.md) | Phase 1: results, failure cases, judgement |
@@ -64,10 +111,16 @@ by nearest vertex.
 | v2: adaptive graph refinement, held-out test (`src/atdc/v2.py`) | done; graph logic tested against the true density |
 | Exact-density synthetic data, true trees, metrics | done |
 | Wrappers: GUDHI ToMATo, HDBSCAN, DADApy (ADP), AuToMATo | done (their own packages) |
-| densityCut | **not run** — R only, no Python implementation found |
+| Uniform subsample tree, reference implementation (`src/atdc/subsample.py`) | done (Phase A); equal to `ATDC2` without refinement on the same vertices |
+| True trees of Gaussian mixtures in any dimension (`src/atdc/truth_gmm.py`) | done (Phase A) |
+| Stability path and listing of stable thresholds (`src/atdc/diagnostics.py`) | prototype (Phase A) |
+| R prototype of the estimator (`benchmarks/r/atdc_proto.R`) | done (Phase A); used only to measure agreement and speed |
+| densityCut | run in Phase A through its R package (Bitbucket, 0.0.1); not run in Phases 1–2 |
+| Leiden | run in Phase A (`leidenalg`) |
+| AuToMATo | Phase 1 only (n = 5 000); **not rerun in Phase A** — minutes per fit |
 | Nested multi-level refinement, adaptive bandwidth, stratified vertex selection | **not implemented** (see design documents) |
-| Real data | **not run** |
-| Packaging, R port, manuscript | out of scope |
+| Real data | Phase A: 16 public tables, 68 579 cells (PCA-50), 18 221 documents (384-d and 768-d embeddings) |
+| R and Python packages, manuscript | **not started** — waits for the decision on the Phase A report |
 
 ## Running
 
@@ -78,7 +131,7 @@ mamba create -p ./.conda-env-dadapy -c conda-forge python=3.11 "numpy<2" scipy s
 ./.conda-env-dadapy/bin/pip install dadapy==0.3.4        # optional, for the ADP comparison
 
 PY=./.conda-env/bin/python
-$PY -m pytest tests -q                    # 46 tests, a few seconds
+$PY -m pytest tests -q                    # 53 tests, half a minute
 
 $PY benchmarks/02_sensitivity.py          # development seeds: parameter choice
 $PY benchmarks/01_ablation.py             # coarse / uniform / random / selective / full
@@ -103,11 +156,34 @@ $PY benchmarks/08_v2_final.py --n 200000 --seeds 5 --tag n200k --no_hdbscan \
      --datasets gauss3_close hetero moons circles hier unimodal gauss3_noise3 hier_noise3 many64
 $PY benchmarks/10_v2_scaling.py           # time by stage and memory (run alone)
 $PY benchmarks/11_report_v2.py            # results/summary/08_*, results/figures/08_*
+
+# Phase A (R environment and data environment: see environment.yml)
+./.conda-env-data/bin/python benchmarks/data_prep.py pbmc      # data/pbmc68k_pca50.npy
+./.conda-env-data/bin/python benchmarks/data_prep.py text      # data/ng20_*.npy
+$PY benchmarks/12_subsample.py --tag dev --variants base kg5 kg20 mid     # seeds 400-404
+$PY benchmarks/12_subsample.py --tag final --seed0 500 --seeds 10         # seeds 500-509
+$PY benchmarks/13_dimension.py --tag dev2                                 # seeds 400-404
+$PY benchmarks/13_dimension.py --tag final --seed0 500 --seeds 10
+$PY benchmarks/15_competitors_A.py --tag main
+$PY benchmarks/17_tabular.py --tag main2            # 16 public tables (scikit-learn, OpenML)
+$PY benchmarks/19_small_n.py --tag main
+$PY benchmarks/20_real_data.py --tag main
+$PY benchmarks/21_detectability.py --tag main        # also --tag pca10 --pca 10, --tag pca5 --pca 5
+$PY benchmarks/21_detectability.py --synthetic       # the same check where the answer is known
+$PY benchmarks/14_cross_language.py --tag main --repeat 3   # R against Python (run alone)
+$PY benchmarks/14_cross_language.py --tag matrix --nn matrix dbscan --backend auto \
+     --configs hier_noise8:20000:1000 hier_noise8:200000:1000 blobs5_d20:20000:1000 \
+               blobs5_d20:20000:4000 hier_noise48:20000:4000      # R matrix search (run alone)
+$PY benchmarks/16_cost.py --tag main                # time by stage, memory (run alone; hours)
+$PY benchmarks/16_cost.py --tag brute2 --only sub:brute
+$PY benchmarks/18_report_A.py                       # results/summary/A_*, results/figures/A_*
 ```
 
 All methods run single-threaded. Seeds: Phase 1 reported on 0–9 with Stage B
 parameters chosen on 100–104; Phase 2 developed on 200–214 and reported on
-300–309. `results/raw/01_ablation_v1.csv` is the first Phase-1 run, made before
+300–309; Phase A developed on 400–404 and reported on 500–519, with 700–702
+for cost, 800 and 810 for the public tables, 811–815 for the controlled cases
+of the detectability check and 900 for the real data. `results/raw/01_ablation_v1.csv` is the first Phase-1 run, made before
 its parameter choice. The development rounds 07 and 07b were run as four
 processes and concatenated.
 
@@ -115,15 +191,34 @@ processes and concatenated.
 
 ```
 src/atdc/      mergetree.py  core.py (v1)  v2.py  density.py  datasets.py  truth.py  metrics.py  baselines.py
-tests/         correctness of the tree, the estimator and the ground truth
+               subsample.py  truth_gmm.py  diagnostics.py                      (Phase A)
+tests/         correctness of the tree, the estimators and the ground truth
 benchmarks/    numbered scripts; each writes results/raw/NN_*.csv
+benchmarks/r/  R prototype, Rcpp loop used for timing only, densityCut runner
+data/          real data prepared by data_prep.py (not in git; provenance in data/*.json)
 results/raw/       one row per run
-results/summary/   tables built by 06_report.py
-results/figures/   figures built by 06_report.py
-docs/          literature review, design, evaluation
+results/summary/   tables built by 06_report.py, 11_report_v2.py, 18_report_A.py
+results/figures/   figures built by the same scripts
+docs/          literature review, design, evaluations, Phase A report and proposals
 ```
 
-## Minimal example
+## Minimal example (Phase A reference implementation)
+
+```python
+import numpy as np, sys
+sys.path.insert(0, "src")
+from atdc import datasets
+from atdc.subsample import SubsampleTree
+from atdc.diagnostics import default_K, noise_floor
+
+X = datasets.make("hier").sample(20000, np.random.default_rng(0))
+K = default_K(len(X))
+fit = SubsampleTree(X, m=4000, K=K, seed=0, dim="auto")
+est = fit.estimate(noise_floor(K))          # labels for all rows at the default threshold
+print(len(est.peak_idx), "clusters;", fit.n_clusters(2.0), "at threshold 2")
+```
+
+## Minimal example (Phases 1–2)
 
 ```python
 import numpy as np, sys

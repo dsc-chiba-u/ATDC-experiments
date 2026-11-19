@@ -168,6 +168,15 @@ if df is not None:
     orc = df.merge(best[["method", "dataset", "cfg"]], on=["method", "dataset", "cfg"])
     orc.groupby(["group", "method"])[cols].mean().round(3).sort_values("ari", ascending=False).to_csv(SUMMARY / "A_15_oracle.csv")
     dflt.pivot_table(index="dataset", columns="method", values="ari", sort=False).round(3).to_csv(SUMMARY / "A_15_ari_by_dataset.csv")
+    # gauss3_border was built in Phase 1 to be undecidable at tau = 0.5 (true
+    # prominence 0.40-0.45): one data set of 18 that moves the mean by 0.05.
+    # Both means are reported; the split was looked at after the results.
+    pa = dflt.pivot_table(index="dataset", columns="method", values="ari", sort=False)
+    pk = dflt.pivot_table(index="dataset", columns="method", values="k_correct", sort=False)
+    nb = [x for x in pa.index if x != "gauss3_border"]
+    pd.DataFrame({"ari_all": pa.mean(), "ari_without_border": pa.loc[nb].mean(), "ari_border": pa.loc["gauss3_border"],
+                  "k_correct_all": pk.mean(), "k_correct_without_border": pk.loc[nb].mean()}).round(3) \
+        .sort_values("ari_all", ascending=False).to_csv(SUMMARY / "A_15_with_without_border.csv")
     dflt.pivot_table(index="dataset", columns="method", values="k_correct", sort=False).round(3) \
         .to_csv(SUMMARY / "A_15_kcorrect_by_dataset.csv")
     order = [m for m in ("sub1000", "sub4000", "sub8000", "full", "tomato_w", "tomato_logdtm", "densitycut", "adp",
@@ -187,7 +196,16 @@ if df is not None:
 
 # ------------------------------------------------------------------ 16: cost
 df = read("16_cost_main")
+b2 = read("16_cost_brute2")          # exact matrix search after it was made to work in fixed-size blocks
 if df is not None:
+    df["version"] = "main"
+    if b2 is not None:
+        b2["version"] = "blocked search"
+        b2.groupby(["data", "n", "d", "method"], sort=False)[["wall", "rss_peak_mb", "t_query", "t_label", "n_est"]] \
+            .mean().round(3).join(df[df.method.str.startswith("sub:brute")]
+                                  .groupby(["data", "n", "d", "method"])[["wall", "rss_peak_mb", "n_est"]].mean().round(3),
+                                  rsuffix="_first_version").to_csv(SUMMARY / "A_16_brute_blocked.csv")
+        df = pd.concat([df[~df.method.str.startswith("sub:brute")], b2], ignore_index=True)
     if "error" in df:
         df[df.error.notna()].to_csv(SUMMARY / "A_16_errors.csv", index=False)
         df = df[df.error.isna()]
@@ -196,11 +214,11 @@ if df is not None:
     for c in ("same_peaks",):
         if c in df:
             df[c] = df[c].astype(float)
-    g = df.groupby(["data", "n", "d", "method"], sort=False)[["wall", "rss_added_mb", "rss_peak_mb"] + tc + extra]
+    g = df.groupby(["data", "n", "d", "method", "version"], sort=False)[["wall", "rss_added_mb", "rss_peak_mb"] + tc + extra]
     t = g.mean().round(4); t["runs"] = g.size(); t.to_csv(SUMMARY / "A_16_cost.csv")
     h = df[df.data == "hier"]
-    fig, axes = plt.subplots(1, 3, figsize=(13.5, 3.7))
-    cm = {"sub:kdtree:1000": ("1 000 vertices", "#86b6ef"), "sub:kdtree:4000": ("4 000 vertices", BLUE),
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.6), gridspec_kw={"width_ratios": [1, 1, 1.35]})
+    cm = {"sub:kdtree:1000": ("subsample tree, 1 000 vertices", "#86b6ef"), "sub:kdtree:4000": ("4 000 vertices", BLUE),
           "sub:kdtree:8000": ("8 000 vertices", "#104281"), "full": ("same tree on all points", GREY),
           "tomato_gudhi": ("GUDHI ToMATo", ORANGE), "hdbscan": ("HDBSCAN", GREEN), "densitycut": ("densityCut (R)", PINK),
           "adp": ("DADApy ADP", YELLOW)}
@@ -210,29 +228,36 @@ if df is not None:
             if len(v):
                 ax.plot(v.index, v.values, marker="o", ms=4, color=c, label=name)
         ax.set_xscale("log"); ax.set_yscale("log"); ax.set_xlabel("n"); ax.set_title(lab + ", 2-D data", loc="left")
-    axes[0].legend(fontsize=7, loc="upper left")
+    hh, ll = axes[0].get_legend_handles_labels()
+    fig.legend(hh, ll, fontsize=7.5, loc="lower left", ncol=4, bbox_to_anchor=(0.03, 0.0))
     ax = axes[2]
     st = [("t_index_full", "index on all data", GREY), ("t_query", "K neighbours of the vertices", BLUE),
-          ("t_graph", "vertex graph", GREEN), ("t_tree", "merge tree", ORANGE), ("t_label", "label all points", YELLOW)]
-    sel = [("hier", 200000, "sub:kdtree:4000", "d=2\nk-d tree"), ("hier_noise8", 200000, "sub:kdtree:4000", "d=10\nk-d tree"),
-           ("hier_noise8", 200000, "sub:brute:4000", "d=10\nbrute"), ("hier_noise48", 200000, "sub:brute:4000", "d=50\nbrute"),
-           ("hier_noise48", 200000, "sub:hnsw:4000", "d=50\nHNSW"), ("pbmc68k", None, "sub:brute:4000", "PBMC\nd=50 brute"),
-           ("ng20_minilm", None, "sub:brute:4000", "text\nd=384 brute")]
-    bottom = np.zeros(len(sel)); labs = []
-    vals = []
+          ("t_graph", "vertex graph", GREEN), ("t_tree", "merge tree", ORANGE), ("t_label", "label all rows", YELLOW)]
+    sel = [("hier", 200000, "sub:kdtree:4000", "d = 2, n = 200 000 (k-d tree)"),
+           ("hier_noise8", 200000, "sub:kdtree:4000", "d = 10, n = 200 000 (k-d tree)"),
+           ("hier_noise48", 200000, "sub:brute:4000", "d = 50, n = 200 000 (matrix)"),
+           ("pbmc68k", None, "sub:brute:4000", "cells, d = 50, n = 68 579 (matrix)"),
+           ("ng20_minilm", None, "sub:brute:4000", "documents, d = 384, n = 18 221 (matrix)"),
+           ("ng20_mpnet", None, "sub:brute:4000", "documents, d = 768, n = 18 221 (matrix)")]
+    vals, labs = [], []
     for data, n, m, lab in sel:
         q = df[(df.data == data) & (df.method == m)]
         if n is not None:
             q = q[q.n == n]
         vals.append([q[c].mean() if c in q and len(q) else 0.0 for c, _, _ in st]); labs.append(lab)
-    vals = np.nan_to_num(np.array(vals))
+    vals = np.nan_to_num(np.array(vals)); tot = vals.sum(axis=1); share = vals / np.maximum(tot, 1e-12)[:, None]
+    y = np.arange(len(sel))[::-1]; left = np.zeros(len(sel))
     for j, (_, name, c) in enumerate(st):
-        ax.bar(range(len(sel)), vals[:, j], bottom=bottom, color=c, label=name, width=0.7, edgecolor=SURF, linewidth=1)
-        bottom += vals[:, j]
-    ax.set_xticks(range(len(sel)), labs, fontsize=7); ax.set_title("time by stage, 4 000 vertices [s]\n(n = 200 000 synthetic; real data as is)", loc="left")
-    ax.legend(fontsize=7)
+        ax.barh(y, share[:, j], left=left, color=c, label=name, height=0.6, edgecolor=SURF, linewidth=1)
+        left += share[:, j]
+    for yi, t_ in zip(y, tot):
+        ax.text(1.02, yi, f"{t_:.2f} s" if t_ < 10 else f"{t_:.0f} s", va="center", fontsize=8, color=INK)
+    ax.set_yticks(y, labs, fontsize=8); ax.set_xlim(0, 1.17); ax.grid(False)
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0], ["0", "25 %", "50 %", "75 %", "100 %"])
+    ax.set_title("time by stage, 4 000 vertices\n(share; total at right)", loc="left")
+    ax.legend(fontsize=7.5, loc="upper center", bbox_to_anchor=(0.4, -0.12), ncol=3)
     fig.suptitle("Cost, single thread, K = 100", x=0.01, ha="left", fontsize=10)
-    fig.tight_layout(); fig.savefig(FIG / "A_16_cost.png", dpi=150); plt.close(fig)
+    fig.tight_layout(rect=(0, 0.12, 1, 0.97)); fig.savefig(FIG / "A_16_cost.png", dpi=150); plt.close(fig)
 
 cl = read("14_cross_language_main")
 if cl is not None:
@@ -299,4 +324,43 @@ if df is not None:
     t = g[[c for c in ("k", "ari", "nmi", "frac_noise", "ari_nonnoise", "wall", "stability", "stability_at_floor", "d_hat") if c in ok]] \
         .mean().round(3)
     t["runs"] = g.size(); t.to_csv(SUMMARY / "A_20_real_data.csv")
+# ------------------------------------------------------------------ 21: detectability
+df = read("21_detectability_main")
+if df is not None:
+    df.sort_values("n").round(3).to_csv(SUMMARY / "A_21_detectability.csv", index=False)
+    df.groupby("verdict").agg(tables=("dataset", "size"), kmeans_ari_vs_classes=("kmeans_ari_vs_classes", "mean"),
+                              ari_tree_vs_classes=("ari_tree_vs_classes", "mean"),
+                              detectability=("detectability", "mean")).round(3).to_csv(SUMMARY / "A_21_by_verdict.csv")
+
+reps = {"as given": read("21_detectability_main"), "10 principal components": read("21_detectability_pca10"),
+        "5 principal components": read("21_detectability_pca5")}
+if all(v is not None for v in reps.values()):
+    out = []
+    for name, v in reps.items():
+        c = v.verdict.value_counts()
+        out.append({"representation": name, "tables": len(v), "consistent": int(c.get("consistent", 0)),
+                    "inconclusive": int(c.get("inconclusive: resolution too low", 0)),
+                    "not supported by density": int(c.get("not supported by density", 0)),
+                    "kmeans_ari_vs_classes": v.kmeans_ari_vs_classes.mean(), "ari_tree_vs_classes": v.ari_tree_vs_classes.mean(),
+                    "consistent_tables": " ".join(v[v.verdict == "consistent"].dataset),
+                    "not_supported_tables": " ".join(v[v.verdict == "not supported by density"].dataset)})
+    pd.DataFrame(out).round(3).to_csv(SUMMARY / "A_21_verdicts_by_representation.csv", index=False)
+
+sy = read("21_detectability_synth")
+if sy is not None:
+    g = sy.groupby(["case", "truth", "n"], sort=False)
+    t = g.agg(runs=("seed", "size"), k_tree=("k_tree", "mean"), detectability=("detectability", "mean"),
+              sim_k_median=("sim_k_median", "mean"), sim_ari=("sim_ari_mean", "mean"))
+    for v in ("consistent", "inconclusive: resolution too low", "not supported by density"):
+        t[v] = g.verdict.apply(lambda x, v=v: int((x == v).sum()))
+    t.round(3).to_csv(SUMMARY / "A_21_synthetic.csv")
+
+# ------------------------------------------------------------------ 14: R with base-R matrix search
+cm = read("14_cross_language_matrix")
+if cm is not None:
+    tc = [c for c in cm.columns if c.startswith("t_")]
+    cm.groupby(["dataset", "n", "d", "m", "impl"], sort=False)[["total"] + tc + ["max_abs_df"]].mean().round(5) \
+        .to_csv(SUMMARY / "A_14_matrix_time.csv")
+    cm.groupby(["dataset", "n", "m"], sort=False)[["max_abs_df", "same_edges", "same_peaks", "labels_identical",
+                                                   "ari_py_r"]].first().to_csv(SUMMARY / "A_14_matrix_agreement.csv")
 print("report A written")

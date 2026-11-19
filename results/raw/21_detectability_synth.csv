@@ -1,0 +1,46 @@
+case,n,d,seed,truth,k_reference,k_tree,ari_tree_vs_kmeans,detectability,sim_k_median,sim_ari_mean,verdict
+"4 Gaussians, distance 6",200,4,811,clusters are real,4,4,0.98602007376905,0.5,3.5,0.8469532772023705,consistent
+"4 Gaussians, distance 6",200,4,812,clusters are real,4,4,1.0,0.65,4.0,0.9029482232972097,consistent
+"4 Gaussians, distance 6",200,4,813,clusters are real,4,4,0.9727478129743651,0.75,4.0,0.9196408765194588,consistent
+"4 Gaussians, distance 6",200,4,814,clusters are real,4,4,0.9862595677186083,0.8,4.0,0.9349559434237532,consistent
+"4 Gaussians, distance 6",200,4,815,clusters are real,4,4,0.9854631415898802,0.65,4.0,0.8852953112679967,consistent
+"4 Gaussians, distance 6",800,4,811,clusters are real,4,4,0.9969309991636343,1.0,4.0,0.986460684675057,consistent
+"4 Gaussians, distance 6",800,4,812,clusters are real,4,4,0.9934919197710483,1.0,4.0,0.9887800358792255,consistent
+"4 Gaussians, distance 6",800,4,813,clusters are real,4,4,1.0,1.0,4.0,0.9885419158992856,consistent
+"4 Gaussians, distance 6",800,4,814,clusters are real,4,4,0.9864498422287318,1.0,4.0,0.9885314189780224,consistent
+"4 Gaussians, distance 6",800,4,815,clusters are real,4,4,0.9934494073680443,1.0,4.0,0.9876816189798141,consistent
+"4 Gaussians, distance 6",3200,4,811,clusters are real,4,4,0.9958210028179187,1.0,4.0,0.9882726244437526,consistent
+"4 Gaussians, distance 6",3200,4,812,clusters are real,4,4,0.9957992131459836,1.0,4.0,0.9876476192148091,consistent
+"4 Gaussians, distance 6",3200,4,813,clusters are real,4,4,0.9966902853094667,1.0,4.0,0.9896316315529725,consistent
+"4 Gaussians, distance 6",3200,4,814,clusters are real,4,4,0.9983541066280749,1.0,4.0,0.9899331132988094,consistent
+"4 Gaussians, distance 6",3200,4,815,clusters are real,4,4,0.9958642485709682,1.0,4.0,0.9890949765644554,consistent
+"4 Gaussians, distance 4",400,4,811,clusters are real,4,1,0.0,0.0,1.0,0.10103280780296153,inconclusive: resolution too low
+"4 Gaussians, distance 4",400,4,812,clusters are real,4,1,0.0,0.0,1.0,0.09886434431063448,inconclusive: resolution too low
+"4 Gaussians, distance 4",400,4,813,clusters are real,4,1,0.0,0.0,1.0,0.12517972412425363,inconclusive: resolution too low
+"4 Gaussians, distance 4",400,4,814,clusters are real,4,2,0.28765971828754966,0.0,2.0,0.29367422590265835,inconclusive: resolution too low
+"4 Gaussians, distance 4",400,4,815,clusters are real,4,1,0.0,0.0,1.5,0.17699290828638886,inconclusive: resolution too low
+"4 Gaussians, distance 4",3200,4,811,clusters are real,4,4,0.9197366305832585,1.0,4.0,0.8748859551124081,consistent
+"4 Gaussians, distance 4",3200,4,812,clusters are real,4,4,0.9284931367789947,1.0,4.0,0.8715668120723384,consistent
+"4 Gaussians, distance 4",3200,4,813,clusters are real,4,4,0.9422785540541952,1.0,4.0,0.8729775028141555,consistent
+"4 Gaussians, distance 4",3200,4,814,clusters are real,4,4,0.9344873162223152,1.0,4.0,0.8826404204692018,consistent
+"4 Gaussians, distance 4",3200,4,815,clusters are real,4,4,0.9472912687123812,1.0,4.0,0.8746342882618181,consistent
+"4 Gaussians, distance 4",12800,4,811,clusters are real,4,4,0.9175090920606894,1.0,4.0,0.8640687823608157,consistent
+"4 Gaussians, distance 4",12800,4,812,clusters are real,4,4,0.9262386717124411,1.0,4.0,0.8706493001134167,consistent
+"4 Gaussians, distance 4",12800,4,813,clusters are real,4,4,0.9202622074154931,1.0,4.0,0.8617776606014939,consistent
+"4 Gaussians, distance 4",12800,4,814,clusters are real,4,4,0.9303379342012856,1.0,4.0,0.8664763109404123,consistent
+"4 Gaussians, distance 4",12800,4,815,clusters are real,4,4,0.9161097850112445,1.0,4.0,0.8670608799820918,consistent
+1 Gaussian cut in 4,3200,4,811,not density clusters,4,1,0.0,0.0,1.0,0.0,inconclusive: resolution too low
+1 Gaussian cut in 4,3200,4,812,not density clusters,4,1,0.0,0.0,1.0,0.0,inconclusive: resolution too low
+1 Gaussian cut in 4,3200,4,813,not density clusters,4,1,0.0,0.0,1.0,0.0,inconclusive: resolution too low
+1 Gaussian cut in 4,3200,4,814,not density clusters,4,1,0.0,0.0,1.0,0.0,inconclusive: resolution too low
+1 Gaussian cut in 4,3200,4,815,not density clusters,4,1,0.0,0.0,1.0,0.0,inconclusive: resolution too low
+uniform square cut in 4,3200,2,811,not density clusters,4,1,0.0,0.15,4.0,0.7431696631381514,inconclusive: resolution too low
+uniform square cut in 4,3200,2,812,not density clusters,4,1,0.0,0.05,4.0,0.7728159748814184,inconclusive: resolution too low
+uniform square cut in 4,3200,2,813,not density clusters,4,1,0.0,0.0,4.0,0.7481809690113155,inconclusive: resolution too low
+uniform square cut in 4,3200,2,814,not density clusters,4,1,0.0,0.05,4.0,0.7597259752553688,inconclusive: resolution too low
+uniform square cut in 4,3200,2,815,not density clusters,4,1,0.0,0.1,4.0,0.7744683062323399,inconclusive: resolution too low
+"2 Gaussians, distance 6, cut in 4",3200,4,811,2 of 4 are real,4,2,0.4974005507225004,0.0,2.0,0.4973526154181288,inconclusive: resolution too low
+"2 Gaussians, distance 6, cut in 4",3200,4,812,2 of 4 are real,4,2,0.5010583113958827,0.0,2.0,0.498634903037441,inconclusive: resolution too low
+"2 Gaussians, distance 6, cut in 4",3200,4,813,2 of 4 are real,4,2,0.4988100801347673,0.0,2.0,0.497461801414829,inconclusive: resolution too low
+"2 Gaussians, distance 6, cut in 4",3200,4,814,2 of 4 are real,4,2,0.5018185739905531,0.0,2.0,0.4990862092140892,inconclusive: resolution too low
+"2 Gaussians, distance 6, cut in 4",3200,4,815,2 of 4 are real,4,2,0.4986329308359767,0.0,2.0,0.49745140449508407,inconclusive: resolution too low

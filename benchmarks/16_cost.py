@@ -19,7 +19,12 @@ log-density and whether the retained peaks are the same as with exact search.
 Stages: index_full (index on all data), query (K neighbours of the m vertices),
 graph (kNN graph of the vertices), tree, label (nearest vertex of all points).
 
-usage: 16_cost.py [--tag main] [--seeds 3]         # driver, run alone
+``main`` was run with the first version of the exact matrix search, whose work
+arrays grew with m*K*d (7 GB for 4000 vertices in 768 dimensions).  The search
+now works in blocks of fixed size; ``brute2`` repeats the affected rows
+(``--only sub:brute``).  Neighbours, densities and trees are unchanged.
+
+usage: 16_cost.py [--tag main] [--seeds 3] [--only TEXT]     # driver, run alone
        16_cost.py --worker method data n seed
 """
 import argparse
@@ -137,6 +142,7 @@ if __name__ == "__main__":
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--tag", default="main")
     ap.add_argument("--timeout", type=int, default=3600)
+    ap.add_argument("--only", default="", help="run only the methods whose name contains this text")
     args = ap.parse_args()
     if args.worker:
         m, ds, n, seed = args.worker
@@ -149,22 +155,21 @@ if __name__ == "__main__":
         grid += [("full", "hier", n), ("tomato_gudhi", "hier", n)]
         if n <= 200_000:
             grid += [("hdbscan", "hier", n), ("densitycut", "hier", n), ("adp", "hier", n)]
-    for data, ns in (("hier_noise8", (20_000, 200_000, 1_000_000)), ("hier_noise48", (20_000, 200_000, 1_000_000)),
-                     ("pbmc68k", (0,)), ("ng20_minilm", (0,)), ("ng20_mpnet", (0,))):
-        for n in ns:
+    for data, backends in (("hier_noise8", ("kdtree", "brute", "hnsw", "nndescent")),
+                           ("hier_noise48", ("brute", "hnsw", "nndescent"))):
+        for n in (20_000, 200_000):
             for m in (1000, 4000):
-                for be in ("kdtree", "brute", "hnsw", "nndescent"):
-                    if be == "kdtree" and data not in ("hier_noise8",):
-                        continue                      # a k-d tree is not a sensible choice beyond d ~ 15
-                    if be == "nndescent" and n == 1_000_000:
-                        continue
-                    grid.append((f"sub:{be}:{m}", data, n))
-            if n <= 200_000:
-                grid += [("full", data, n), ("hdbscan", data, n)]
-            if n <= 20_000 or data == "pbmc68k":
-                grid.append(("tomato_gudhi", data, n))
-            if data == "pbmc68k":
-                grid.append(("densitycut", data, n))
+                grid += [(f"sub:{be}:{m}", data, n) for be in backends]
+        grid += [("full", data, 20_000), ("tomato_gudhi", data, 20_000), ("hdbscan", data, 20_000)]
+        grid += [(f"sub:{be}:4000", data, 1_000_000) for be in backends[:2] if be != "hnsw"]
+    for data in ("pbmc68k", "ng20_minilm", "ng20_mpnet"):
+        if not (ROOT / "data" / REAL[data]).exists():
+            continue
+        for m in (1000, 4000):
+            grid += [(f"sub:{be}:{m}", data, 0) for be in ("brute", "hnsw", "nndescent")]
+        grid += [("full", data, 0), ("tomato_gudhi", data, 0)]
+        grid.append(("densitycut", data, 0) if data == "pbmc68k" else ("hdbscan", data, 0))
+    grid = [g for g in grid if args.only in g[0]]
     rows = []
     for method, data, n in grid:
         for seed in range(700, 700 + args.seeds):
@@ -178,7 +183,7 @@ if __name__ == "__main__":
                 r = {"method": method, "data": data, "n": n, "seed": seed, "error": f"timeout {args.timeout}s"}
             rows.append(r)
             print(method, data, n, seed, round(r.get("wall", float("nan")), 3), r.get("error", ""), flush=True)
-            if "error" in r:
-                break                                  # do not repeat a failure or a time-out
+            if "error" in r or r.get("wall", 0) > 60:
+                break                                  # one run only for failures, time-outs and slow methods
         save(rows, f"16_cost_{args.tag}")
     dump_json({"K": K, "tau": TAU, "env": env_info()}, RAW / f"16_cost_{args.tag}.json")

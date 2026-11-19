@@ -1,0 +1,11 @@
+dataset,n,m,max_abs_df,same_edges,same_peaks,labels_identical,ari_py_r
+hier,20000,1000,5.3290705182007506e-15,True,True,True,1.0
+hier,20000,8000,5.3290705182007506e-15,True,True,True,1.0
+many64,20000,4000,5.3290705182007506e-15,True,True,True,1.0
+hier,200000,1000,5.3290705182007506e-15,True,True,True,1.0
+hier,200000,8000,5.3290705182007506e-15,True,True,True,1.0
+hier,1000000,1000,5.3290705182007506e-15,True,True,True,1.0
+hier_noise8,20000,1000,5.329070518200752e-14,True,True,True,1.0
+hier_noise8,200000,1000,5.1514348342607263e-14,True,True,True,1.0
+blobs5_d20,20000,1000,6.394884621840903e-14,True,True,True,1.0
+rare1,20000,4000,5.3290705182007506e-15,True,True,True,1.0
