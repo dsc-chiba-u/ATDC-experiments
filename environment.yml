@@ -1,0 +1,24 @@
+# Project-local environment (the global Python is not touched):
+#
+#   mamba env create -p ./.conda-env -f environment.yml
+#   ./.conda-env/bin/python -m pytest tests -q
+#
+# Versions are the ones that produced the committed results.
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy=2.4
+  - scipy=1.17
+  - scikit-learn=1.9
+  - matplotlib
+  - pandas
+  - pytest
+  - hdbscan
+  - gudhi=3.13
+  - pynndescent
+  - psutil
+  - pip
+  - pip:
+      - dadapy==0.3.4
+      - automato

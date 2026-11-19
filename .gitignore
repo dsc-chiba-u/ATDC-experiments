@@ -1,0 +1,11 @@
+# project-local conda environment (recreate with environment.yml)
+.conda-env/
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+# temporary / large intermediates
+results/**/cache/
+*.log
+*.tmp
+.DS_Store
