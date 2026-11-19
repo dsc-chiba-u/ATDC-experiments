@@ -165,6 +165,23 @@ def make(name: str):
         gx, gy = np.meshgrid(np.arange(8), np.arange(8))
         means = 4.2 * np.stack([gx.ravel(), gy.ravel()], axis=1) + rng.uniform(-0.4, 0.4, (64, 2))
         return GMM(means, rng.uniform(0.6, 1.2, 64), rng.uniform(0.5, 1.5, 64), name=name)
+    # ---- Phase A additions (small populations, many peaks, structure in d dims)
+    if name.startswith("rare"):   # rare05, rare1, rare2, rare5: a small tight cluster of 0.5-5 %
+        frac = {"rare05": 0.005, "rare1": 0.01, "rare2": 0.02, "rare5": 0.05}[name]
+        return GMM([[0, 0], [5, 0], [2.5, 4.5], [9.0, 7.0]], np.array([1.0, 1.0, 1.0, 0.16]),
+                   [(1 - frac) / 3] * 3 + [frac], name=name)
+    if name in ("many16", "many256"):     # same recipe as many64
+        C = int(name[4:]); g = int(round(C ** 0.5))
+        rng = np.random.default_rng(C)
+        gx, gy = np.meshgrid(np.arange(g), np.arange(g))
+        means = 4.2 * np.stack([gx.ravel(), gy.ravel()], axis=1) + rng.uniform(-0.4, 0.4, (C, 2))
+        return GMM(means, rng.uniform(0.6, 1.2, C), rng.uniform(0.5, 1.5, C), name=name)
+    if name.startswith("blobs5_d"):       # 5 isotropic components of unequal scale filling d dims
+        d = int(name[len("blobs5_d"):])
+        means = np.zeros((5, d))
+        means[np.arange(5), np.arange(5)] = 4.5       # pairwise distance 6.36
+        return GMM(means, np.array([1.0, 0.8, 1.2, 0.9, 1.1]) ** 2, [0.3, 0.15, 0.25, 0.1, 0.2],
+                   name=name)
     if name.startswith("gauss3_noise"):   # e.g. gauss3_noise8 -> 2 + 8 dims
         return add_noise_dims(make("gauss3"), int(name[len("gauss3_noise"):]), 1.0)
     if name.startswith("hier_noise"):
@@ -175,4 +192,5 @@ def make(name: str):
 ALL_2D = ["gauss3", "gauss3_close", "gauss3_border", "hetero", "moons", "circles", "hier",
           "unimodal", "uniform", "banana"]
 HIGH_DIM = ["gauss3_noise3", "gauss3_noise8", "hier_noise3"]
+RARE = ["rare05", "rare1", "rare2", "rare5"]          # Phase A
 MANY = ["many64"]   # added after the main runs as a stress test for graph resolution

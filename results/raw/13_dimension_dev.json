@@ -1,0 +1,54 @@
+{
+ "args": {
+  "n": 20000,
+  "seed0": 400,
+  "seeds": 5,
+  "K": 100,
+  "B": 4,
+  "ms": [
+   1000,
+   4000
+  ],
+  "datasets": [
+   "gauss3",
+   "gauss3_noise1",
+   "gauss3_noise3",
+   "gauss3_noise8",
+   "gauss3_noise18",
+   "gauss3_noise48",
+   "hier",
+   "hier_noise1",
+   "hier_noise3",
+   "hier_noise8",
+   "hier_noise18",
+   "hier_noise48",
+   "blobs5_d5",
+   "blobs5_d10",
+   "blobs5_d20",
+   "blobs5_d50"
+  ],
+  "jobs": 8,
+  "tag": "dev"
+ },
+ "env": {
+  "python": "3.11.18",
+  "numpy": "2.4.6",
+  "scipy": "1.17.1",
+  "sklearn": "1.9.1",
+  "machine": "Linux-6.8.0-136-generic-x86_64-with-glibc2.35",
+  "threads": "1"
+ },
+ "taus": [
+  0.25,
+  0.35,
+  0.5,
+  0.7,
+  1.0,
+  1.4,
+  2.0,
+  2.8,
+  4.0,
+  5.7,
+  8.0
+ ]
+}

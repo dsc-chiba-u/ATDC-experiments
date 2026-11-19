@@ -10,3 +10,6 @@ results/**/cache/
 *.log
 *.tmp
 .DS_Store
+.conda-env-r/
+.conda-env-data/
+data/
